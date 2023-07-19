@@ -18,7 +18,7 @@ CopySurfaceToSubsurface(const CompositeVector& surf, CompositeVector& sub)
   const Epetra_MultiVector& surf_c = *surf.ViewComponent("cell", false);
 
   for (unsigned int sc = 0; sc != surf_c.MyLength(); ++sc) {
-    AmanziMesh::Entity_ID f = surf.Mesh()->entity_get_parent(AmanziMesh::CELL, sc);
+    AmanziMesh::Entity_ID f = surf.Mesh()->getEntityParent(AmanziMesh::Entity_kind::CELL, sc);
     SetDomainFaceValue(sub, f, surf_c[0][sc]);
   }
 }
@@ -30,7 +30,7 @@ CopySubsurfaceToSurface(const CompositeVector& sub, CompositeVector& surf)
   Epetra_MultiVector& surf_c = *surf.ViewComponent("cell", false);
 
   for (unsigned int sc = 0; sc != surf_c.MyLength(); ++sc) {
-    AmanziMesh::Entity_ID f = surf.Mesh()->entity_get_parent(AmanziMesh::CELL, sc);
+    AmanziMesh::Entity_ID f = surf.Mesh()->getEntityParent(AmanziMesh::Entity_kind::CELL, sc);
     surf_c[0][sc] = GetDomainFaceValue(sub, f);
   }
 }
@@ -45,7 +45,7 @@ MergeSubsurfaceAndSurfacePressure(const CompositeVector& h_prev,
   double p_atm = 101325.;
 
   for (unsigned int sc = 0; sc != surf_p_c.MyLength(); ++sc) {
-    AmanziMesh::Entity_ID f = surf_p.Mesh()->entity_get_parent(AmanziMesh::CELL, sc);
+    AmanziMesh::Entity_ID f = surf_p.Mesh()->getEntityParent(AmanziMesh::Entity_kind::CELL, sc);
     if (h_c[0][sc] > 0. && surf_p_c[0][sc] > p_atm) {
       SetDomainFaceValue(sub_p, f, surf_p_c[0][sc]);
     } else {
@@ -72,7 +72,7 @@ GetDomainFaceValue(const CompositeVector& sub_p, int f)
     return vec[0][f];
     ;
   } else if (face_entity == "boundary_face") {
-    int bf = sub_p.Mesh()->exterior_face_map(false).LID(sub_p.Mesh()->face_map(false).GID(f));
+    int bf = sub_p.Mesh()->getMap(AmanziMesh::Entity_kind::BOUNDARY_FACE,false).LID(sub_p.Mesh()->getMap(AmanziMesh::Entity_kind::FACE,false).GID(f));
     const Epetra_MultiVector& vec = *sub_p.ViewComponent(face_entity, false);
     return vec[0][bf];
   } else {
@@ -97,7 +97,7 @@ SetDomainFaceValue(CompositeVector& sub_p, int f, double value)
     Epetra_MultiVector& vec = *sub_p.ViewComponent(face_entity, false);
     vec[0][f] = value;
   } else if (face_entity == "boundary_face") {
-    int bf = sub_p.Mesh()->exterior_face_map(false).LID(sub_p.Mesh()->face_map(false).GID(f));
+    int bf = sub_p.Mesh()->getMap(AmanziMesh::Entity_kind::BOUNDARY_FACE,false).LID(sub_p.Mesh()->getMap(AmanziMesh::Entity_kind::FACE,false).GID(f));
     Epetra_MultiVector& vec = *sub_p.ViewComponent(face_entity, false);
     vec[0][bf] = value;
   }

@@ -128,7 +128,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtDamp(double h,
   }
 
   Teuchos::RCP<const AmanziMesh::Mesh> surf_mesh = u->SubVector(i_surf_)->Data()->Mesh();
-  int ncells_surf = surf_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_surf = surf_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   Teuchos::RCP<const CompositeVector> domain_u = u->SubVector(i_domain_)->Data();
   Teuchos::RCP<CompositeVector> domain_Pu = Pu->SubVector(i_domain_)->Data();
@@ -139,7 +139,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtDamp(double h,
   double damp = 1.;
   if (damp_the_spurt_) {
     for (int cs = 0; cs != ncells_surf; ++cs) {
-      AmanziMesh::Entity_ID f = surf_mesh->entity_get_parent(AmanziMesh::CELL, cs);
+      AmanziMesh::Entity_ID f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, cs);
       double p_old = GetDomainFaceValue(*u->SubVector(i_domain_)->Data(), f);
       double p_Pu = GetDomainFaceValue(*Pu->SubVector(i_domain_)->Data(), f);
       double p_new = p_old - p_Pu;
@@ -147,7 +147,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtDamp(double h,
         double my_damp = ((patm + cap_size_) - p_old) / (p_new - p_old);
         damp = std::min(damp, my_damp);
         if (vo_->os_OK(Teuchos::VERB_EXTREME))
-          std::cout << "   DAMPING THE SPURT (sc=" << surf_mesh->cell_map(false).GID(cs)
+          std::cout << "   DAMPING THE SPURT (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                     << "): p_old = " << p_old << ", p_new = " << p_new << ", coef = " << my_damp
                     << std::endl;
       }
@@ -177,7 +177,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtCap(double h,
   const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
   Teuchos::RCP<const AmanziMesh::Mesh> surf_mesh = u->SubVector(i_surf_)->Data()->Mesh();
-  int ncells_surf = surf_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_surf = surf_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   Teuchos::RCP<const CompositeVector> domain_u = u->SubVector(i_domain_)->Data();
   Teuchos::RCP<CompositeVector> domain_Pu = Pu->SubVector(i_domain_)->Data();
@@ -186,7 +186,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtCap(double h,
   int n_modified = 0;
   if (cap_the_spurt_) {
     for (int cs = 0; cs != ncells_surf; ++cs) {
-      AmanziMesh::Entity_ID f = surf_mesh->entity_get_parent(AmanziMesh::CELL, cs);
+      AmanziMesh::Entity_ID f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, cs);
 
       double p_old = GetDomainFaceValue(*u->SubVector(i_domain_)->Data(), f);
       double p_Pu = GetDomainFaceValue(*Pu->SubVector(i_domain_)->Data(), f);
@@ -197,8 +197,8 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtCap(double h,
 
         n_modified++;
         if (vo_->os_OK(Teuchos::VERB_HIGH))
-          std::cout << "  CAPPING THE SPURT (sc=" << surf_mesh->cell_map(false).GID(cs)
-                    << ",f=" << u->SubVector(i_domain_)->Data()->Mesh()->face_map(false).GID(f)
+          std::cout << "  CAPPING THE SPURT (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
+                    << ",f=" << u->SubVector(i_domain_)->Data()->Mesh()->getMap(AmanziMesh::Entity_kind::FACE,false).GID(f)
                     << "): p_old = " << p_old << ", p_new = " << p_new
                     << ", p_capped = " << p_old - p_corrected << std::endl;
       } else if ((p_new < patm) && (p_old > patm)) {
@@ -207,7 +207,7 @@ MPCDelegateWater::ModifyCorrection_WaterSpurtCap(double h,
         // SetDomainFaceValue(*domain_Pu, f, p_corrected);
         n_modified++;
         if (vo_->os_OK(Teuchos::VERB_HIGH))
-          std::cout << "  INVERSE SPURT (sc=" << surf_mesh->cell_map(false).GID(cs)
+          std::cout << "  INVERSE SPURT (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                     << "): p_old = " << p_old << ", p_new = " << p_new << std::endl;
       }
     }
@@ -227,7 +227,7 @@ MPCDelegateWater::ModifyCorrection_SaturatedSpurtDamp(double h,
   const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
   Teuchos::RCP<const AmanziMesh::Mesh> domain_mesh = u->SubVector(i_domain_)->Data()->Mesh();
-  int ncells_domain = domain_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_domain = domain_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   const Epetra_MultiVector& domain_p_c =
     *u->SubVector(i_domain_)->Data()->ViewComponent("cell", false);
@@ -244,7 +244,7 @@ MPCDelegateWater::ModifyCorrection_SaturatedSpurtDamp(double h,
         double my_damp = ((patm + cap_size_) - p_old) / (p_new - p_old);
         damp = std::min(damp, my_damp);
         if (vo_->os_OK(Teuchos::VERB_EXTREME))
-          std::cout << "   DAMPING THE SATURATED SPURT (c=" << domain_mesh->cell_map(false).GID(c)
+          std::cout << "   DAMPING THE SATURATED SPURT (c=" << domain_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(c)
                     << "): p_old = " << p_old << ", p_new = " << p_new << ", coef = " << my_damp
                     << std::endl;
       }
@@ -274,7 +274,7 @@ MPCDelegateWater::ModifyCorrection_SaturatedSpurtCap(double h,
   const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
   Teuchos::RCP<const AmanziMesh::Mesh> domain_mesh = u->SubVector(i_domain_)->Data()->Mesh();
-  int ncells_domain = domain_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_domain = domain_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   const Epetra_MultiVector& domain_p_c =
     *u->SubVector(i_domain_)->Data()->ViewComponent("cell", false);
@@ -291,7 +291,7 @@ MPCDelegateWater::ModifyCorrection_SaturatedSpurtCap(double h,
         domain_Pu_c[0][c] = p_old - (patm + cap_size_);
         n_modified++;
         if (vo_->os_OK(Teuchos::VERB_HIGH))
-          std::cout << "  CAPPING THE SATURATED SPURT (c=" << domain_mesh->cell_map(false).GID(c)
+          std::cout << "  CAPPING THE SATURATED SPURT (c=" << domain_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(c)
                     << "): p_old = " << p_old << ", p_new = " << p_new
                     << ", p_capped = " << p_old - domain_Pu_c[0][c] << std::endl;
       }
@@ -312,7 +312,7 @@ MPCDelegateWater::ModifyCorrection_DesaturatedSpurtDamp(double h,
   const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
   Teuchos::RCP<const AmanziMesh::Mesh> domain_mesh = u->SubVector(i_domain_)->Data()->Mesh();
-  int ncells_domain = domain_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_domain = domain_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   const Epetra_MultiVector& domain_p_c =
     *u->SubVector(i_domain_)->Data()->ViewComponent("cell", false);
@@ -329,7 +329,7 @@ MPCDelegateWater::ModifyCorrection_DesaturatedSpurtDamp(double h,
         double my_damp = ((patm - cap_size_) - p_old) / (p_new - p_old);
         damp = std::min(damp, my_damp);
         if (vo_->os_OK(Teuchos::VERB_EXTREME))
-          std::cout << "   DAMPING THE DESATURATED SPURT (c=" << domain_mesh->cell_map(false).GID(c)
+          std::cout << "   DAMPING THE DESATURATED SPURT (c=" << domain_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(c)
                     << "): p_old = " << p_old << ", p_new = " << p_new << ", coef = " << my_damp
                     << std::endl;
       }
@@ -359,7 +359,7 @@ MPCDelegateWater::ModifyCorrection_DesaturatedSpurtCap(double h,
   const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
   Teuchos::RCP<const AmanziMesh::Mesh> domain_mesh = u->SubVector(i_domain_)->Data()->Mesh();
-  int ncells_domain = domain_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+  int ncells_domain = domain_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
   const Epetra_MultiVector& domain_p_c =
     *u->SubVector(i_domain_)->Data()->ViewComponent("cell", false);
@@ -376,7 +376,7 @@ MPCDelegateWater::ModifyCorrection_DesaturatedSpurtCap(double h,
         domain_Pu_c[0][c] = p_old - (patm - cap_size_);
         n_modified++;
         if (vo_->os_OK(Teuchos::VERB_HIGH))
-          std::cout << "  CAPPING THE DESATURATED SPURT (c=" << domain_mesh->cell_map(false).GID(c)
+          std::cout << "  CAPPING THE DESATURATED SPURT (c=" << domain_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(c)
                     << "): p_old = " << p_old << ", p_new = " << p_new
                     << ", p_capped = " << p_old - domain_Pu_c[0][c] << std::endl;
       }
@@ -405,7 +405,7 @@ MPCDelegateWater::ModifyPredictor_Heuristic(double h, const Teuchos::RCP<TreeVec
     const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
     int ncells = surf_u_c.MyLength();
     for (int c = 0; c != ncells; ++c) {
-      int f = surf_mesh->entity_get_parent(AmanziMesh::CELL, c);
+      int f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, c);
 
       double dp = surf_u_c[0][c] - surf_u_prev_c[0][c];
       double pnew = surf_u_c[0][c] - patm;
@@ -446,7 +446,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
     const double& patm = S_->Get<double>("atmospheric_pressure", Tags::DEFAULT);
 
     Teuchos::RCP<const AmanziMesh::Mesh> surf_mesh = u->SubVector(i_surf_)->Data()->Mesh();
-    int ncells_surf = surf_mesh->num_entities(AmanziMesh::CELL, AmanziMesh::Parallel_type::OWNED);
+    int ncells_surf = surf_mesh->getNumEntities(AmanziMesh::Entity_kind::CELL, AmanziMesh::Parallel_kind::OWNED);
 
     Epetra_MultiVector& surf_pnew_c = *u->SubVector(i_surf_)->Data()->ViewComponent("cell", false);
     Teuchos::RCP<CompositeVector> domain_pnew = u->SubVector(i_domain_)->Data();
@@ -455,10 +455,10 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
 
     auto domain_pold = S_->GetPtr<CompositeVector>(key_ss, tag_current_);
 
-    int rank = surf_mesh->get_comm()->MyPID();
+    int rank = surf_mesh->getComm()->MyPID();
     double damp = 1.;
     for (unsigned int cs = 0; cs != ncells_surf; ++cs) {
-      AmanziMesh::Entity_ID f = surf_mesh->entity_get_parent(AmanziMesh::CELL, cs);
+      AmanziMesh::Entity_ID f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, cs);
       double p_old = GetDomainFaceValue(*domain_pold, f);
       double p_new = GetDomainFaceValue(*domain_pnew, f);
       if ((p_new > patm + cap_size_) && (p_old < patm)) {
@@ -466,7 +466,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
         double my_damp = ((patm + cap_size_) - p_old) / (p_new - p_old);
         damp = std::min(damp, my_damp);
         if (vo_->os_OK(Teuchos::VERB_EXTREME))
-          std::cout << "   DAMPING THE SPURT (1st over) (sc=" << surf_mesh->cell_map(false).GID(cs)
+          std::cout << "   DAMPING THE SPURT (1st over) (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                     << "): p_old = " << p_old << ", p_new = " << p_new << ", coef = " << my_damp
                     << std::endl;
       } else if ((p_old > patm) && (p_new - p_old > p_old - patm)) {
@@ -474,7 +474,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
         double my_damp = ((patm + 2 * (p_old - patm)) - p_old) / (p_new - p_old);
         damp = std::min(damp, my_damp);
         if (vo_->os_OK(Teuchos::VERB_EXTREME))
-          std::cout << "   DAMPING THE SPURT (2nd over) (sc=" << surf_mesh->cell_map(false).GID(cs)
+          std::cout << "   DAMPING THE SPURT (2nd over) (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                     << "): p_old = " << p_old << ", p_new = " << p_new << ", coef = " << my_damp
                     << std::endl;
       }
@@ -501,7 +501,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
 
       // undamp and cap the surface
       for (unsigned int cs = 0; cs != ncells_surf; ++cs) {
-        AmanziMesh::Entity_ID f = surf_mesh->entity_get_parent(AmanziMesh::CELL, cs);
+        AmanziMesh::Entity_ID f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, cs);
         double p_old = GetDomainFaceValue(*domain_pnew, f);
         ;
         double p_new = GetDomainFaceValue(*domain_pnew, f);
@@ -512,7 +512,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
           SetDomainFaceValue(*domain_pnew, f, new_value);
           surf_pnew_c[0][cs] = patm + new_value;
           if (vo_->os_OK(Teuchos::VERB_HIGH))
-            std::cout << "  CAPPING THE SPURT (1st over) (sc=" << surf_mesh->cell_map(false).GID(cs)
+            std::cout << "  CAPPING THE SPURT (1st over) (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                       << "): p_old = " << p_old << ", p_new = " << p_new
                       << ", p_capped = " << new_value << std::endl;
         } else if ((p_old > patm) && (p_new - p_old > p_old - patm)) {
@@ -522,7 +522,7 @@ MPCDelegateWater::ModifyPredictor_WaterSpurtDamp(double h, const Teuchos::RCP<Tr
           surf_pnew_c[0][cs] = new_value;
 
           if (vo_->os_OK(Teuchos::VERB_HIGH))
-            std::cout << "  CAPPING THE SPURT (2nd over) (sc=" << surf_mesh->cell_map(false).GID(cs)
+            std::cout << "  CAPPING THE SPURT (2nd over) (sc=" << surf_mesh->getMap(AmanziMesh::Entity_kind::CELL,false).GID(cs)
                       << "): p_old = " << p_old << ", p_new = " << p_new
                       << ", p_capped = " << new_value << std::endl;
         } else {
@@ -578,7 +578,7 @@ MPCDelegateWater::ModifyPredictor_TempFromSource(double h, const Teuchos::RCP<Tr
         // frozen, modify predictor to ensure surface is ready to accept ice
         if (surf_pnew_c[0][c] < 101325.) {
           surf_pnew_c[0][c] = 101325.1;
-          AmanziMesh::Entity_ID f = surf_mesh->entity_get_parent(AmanziMesh::CELL, c);
+          AmanziMesh::Entity_ID f = surf_mesh->getEntityParent(AmanziMesh::Entity_kind::CELL, c);
           SetDomainFaceValue(*domain_pnew, f, surf_pnew_c[0][c]);
         }
       }

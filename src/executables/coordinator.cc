@@ -118,7 +118,7 @@ Coordinator::Coordinator(const Teuchos::RCP<Teuchos::ParameterList>& plist,
           node_key, Amanzi::Tags::NEXT, node_key)
         .SetMesh(mesh->second.first)
         ->SetGhosted()
-        ->SetComponent("node", Amanzi::AmanziMesh::NODE, mesh->second.first->space_dimension());
+        ->SetComponent("node", Amanzi::AmanziMesh::Entity_kind::NODE, mesh->second.first->getSpaceDimension());
     }
 
     // writes region information
@@ -281,7 +281,7 @@ Coordinator::initialize()
         auto vis = Teuchos::rcp(new Amanzi::VisualizationDomainSet(*sublist_p));
         vis->set_name(domain_name_base);
         vis->set_domain_set(dset);
-        vis->set_mesh(dset->get_referencing_parent());
+        vis->set_mesh(dset->getReferencingParent());
         vis->CreateFiles(false);
         visualization_.push_back(vis);
       }
@@ -355,7 +355,7 @@ Coordinator::report_memory()
     double global_ncells(0.0);
     double local_ncells(0.0);
     for (Amanzi::State::mesh_iterator mesh = S_->mesh_begin(); mesh != S_->mesh_end(); ++mesh) {
-      Epetra_Map cell_map = (mesh->second.first)->cell_map(false);
+      Epetra_Map cell_map = (mesh->second.first)->getMap(Amanzi::AmanziMesh::Entity_kind::CELL,false);
       global_ncells += cell_map.NumGlobalElements();
       local_ncells += cell_map.NumMyElements();
     }
@@ -521,11 +521,11 @@ Coordinator::advance()
         vc_vec->ScatterMasterToGhosted();
         const Epetra_MultiVector& vc = *vc_vec->ViewComponent("node", true);
 
-        std::vector<int> node_ids(vc.MyLength());
-        Amanzi::AmanziGeometry::Point_List old_positions(vc.MyLength());
+	Amanzi::AmanziMesh::Entity_ID_View node_ids("node_ids", vc.MyLength());
+        Amanzi::AmanziMesh::Point_View old_positions("old_positions", vc.MyLength());
         for (int n = 0; n != vc.MyLength(); ++n) {
           node_ids[n] = n;
-          if (mesh->second.first->space_dimension() == 2) {
+          if (mesh->second.first->getSpaceDimension() == 2) {
             old_positions[n] = Amanzi::AmanziGeometry::Point(vc[0][n], vc[1][n]);
           } else {
             old_positions[n] = Amanzi::AmanziGeometry::Point(vc[0][n], vc[1][n], vc[2][n]);
@@ -533,8 +533,7 @@ Coordinator::advance()
         }
 
         // undeform the mesh
-        Amanzi::AmanziGeometry::Point_List final_positions;
-        mesh->second.first->deform(node_ids, old_positions, false, &final_positions);
+	Amanzi::AmanziMesh::MeshAlgorithms::deform(*(mesh->second.first), node_ids, old_positions);
       }
     }
   }
