@@ -1,6 +1,8 @@
 ATS: The Advanced Terrestrial Simulator
 =======================================
 
+An exciting update using the container fork workflow.
+
 The Advanced Terrestrial Simulator (formerly sometimes known as the Arctic Terrestrial Simulator) is a code for solving ecosystem-based, integrated, distributed hydrology.
 
 Capabilities are largely based on solving various forms of Richards equation coupled to a surface flow equation, along with the needed sources and sinks for ecosystem and climate models.  This can (but need not) include thermal processes (especially ice for frozen soils), evapo-transpiration, albedo-driven surface energy balances, snow, biogeochemistry, plant dynamics, deformation, transport, and much more.  In addition, we solve problems of reactive transport in both the subsurface and surface, leveraging external geochemical engines through the Alquimia interface.
